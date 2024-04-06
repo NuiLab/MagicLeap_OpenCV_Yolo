@@ -8,10 +8,14 @@ using UnityEngine.XR.MagicLeap;
 
 public class SimpleCameraDisplay : MonoBehaviour
 {
+    [SerializeField] GameObject screen1;
+
+    MLCamera.PlaneInfo imagePlaneGlobal;
+
     [SerializeField, Tooltip("Desired width for the camera capture")]
-    private int captureWidth = 1280;
+    public int captureWidth = 1280;
     [SerializeField, Tooltip("Desired height for the camera capture")]
-    private int captureHeight = 720;
+    public int captureHeight = 720;
     [SerializeField, Tooltip("The renderer to show the camera capture on RGB format")]
     private Renderer _screenRendererRGB = null;
 
@@ -126,9 +130,6 @@ public class SimpleCameraDisplay : MonoBehaviour
     {
         if (colors == null || colors.Length != captureWidth * captureHeight)
             colors = new Color32[captureWidth * captureHeight];
-        // baseMat = new Mat(captureHeight, captureWidth, CvType.CV_8UC4);
-
-        // frameMaterial = new Mat(baseMat.rows(), baseMat.cols(), CvType.CV_8UC(Channels(outputColorFormat)), new Scalar(0, 0, 0, 255));
 
         if (frameMaterial == null)
         {
@@ -186,6 +187,7 @@ public class SimpleCameraDisplay : MonoBehaviour
 
     private void UpdateRGBTexture(ref Texture2D videoTextureRGB, MLCamera.PlaneInfo imagePlane, Renderer renderer)
     {
+        imagePlaneGlobal = imagePlane;
 
         if (videoTextureRGB != null &&
             (videoTextureRGB.width != imagePlane.Width || videoTextureRGB.height != imagePlane.Height))
@@ -227,6 +229,25 @@ public class SimpleCameraDisplay : MonoBehaviour
     public Mat GetMat()
     {
         return frameMaterial;
+    }
+
+    public void setImage(ref Texture2D videoTextureRGB)
+    {
+        int actualWidth = (int)(imagePlaneGlobal.Width * imagePlaneGlobal.PixelStride);
+
+        if (imagePlaneGlobal.Stride != actualWidth)
+        {
+            var newTextureChannel = new byte[actualWidth * imagePlaneGlobal.Height];
+            for (int i = 0; i < imagePlaneGlobal.Height; i++)
+            {
+                Buffer.BlockCopy(imagePlaneGlobal.Data, (int)(i * imagePlaneGlobal.Stride), newTextureChannel, i * actualWidth, actualWidth);
+            }
+            videoTextureRGB.LoadRawTextureData(newTextureChannel);
+        }
+        else
+        {
+            videoTextureRGB.LoadRawTextureData(imagePlaneGlobal.Data);
+        }
     }
 
 }

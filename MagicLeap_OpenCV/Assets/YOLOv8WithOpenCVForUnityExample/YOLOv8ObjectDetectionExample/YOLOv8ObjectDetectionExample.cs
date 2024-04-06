@@ -13,6 +13,7 @@ using OpenCVForUnity.ImgcodecsModule;
 using OpenCVForUnity.UnityUtils;
 using OpenCVForUnity.UnityUtils.Helper;
 using YOLOv8WithOpenCVForUnity;
+using UnityEngine.UI;
 
 namespace YOLOv8WithOpenCVForUnityExample
 {
@@ -24,6 +25,11 @@ namespace YOLOv8WithOpenCVForUnityExample
     // [RequireComponent(typeof(WebCamTextureToMatHelper))]
     public class YOLOv8ObjectDetectionExample : MonoBehaviour
     {
+        [SerializeField] GameObject screen1;
+        [SerializeField] GameObject screen2;
+
+        [SerializeField, Tooltip("The renderer to show the camera capture on RGB format")]
+        private Renderer _screenRendererRGB = null;
 
         [TooltipAttribute("Path to a binary file of model contains trained weights.")]
         public string model = "yolov8n.onnx";
@@ -165,7 +171,7 @@ namespace YOLOv8WithOpenCVForUnityExample
                 // Avoids the front camera low light issue that occurs in only some Android devices (e.g. Google Pixel, Pixel2).
                 webCamTextureToMatHelper.avoidAndroidFrontCameraLowLightIssue = true;
 #endif
-                webCamTextureToMatHelper.Initialize();
+                // webCamTextureToMatHelper.Initialize();
             }
             else
             {
@@ -197,7 +203,7 @@ namespace YOLOv8WithOpenCVForUnityExample
                         objectDetector.visualize(img, results, true, false);
                     }
 
-                    gameObject.transform.localScale = new Vector3(img.width(), img.height(), 1);
+                    // gameObject.transform.localScale = new Vector3(img.width(), img.height(), 1);
                     float imageWidth = img.width();
                     float imageHeight = img.height();
                     float widthScale = (float)Screen.width / imageWidth;
@@ -222,7 +228,7 @@ namespace YOLOv8WithOpenCVForUnityExample
                 /////////////////////
             }
         }
-
+        /*
         /// <summary>
         /// Raises the webcam texture to mat helper initialized event.
         /// </summary>
@@ -293,6 +299,7 @@ namespace YOLOv8WithOpenCVForUnityExample
         {
             Debug.Log("OnWebCamTextureToMatHelperErrorOccurred " + errorCode);
         }
+        */
 
         // Update is called once per frame
         protected virtual void Update()
@@ -329,36 +336,66 @@ namespace YOLOv8WithOpenCVForUnityExample
 
                 Utils.matToTexture2D(rgbaMat, texture);
             }*/
-            
-            Mat rgbaMat = simpleCameraDisplay.GetMat();
-            bgrMat = new Mat(rgbaMat.rows(), rgbaMat.cols(), CvType.CV_8UC3);
-            texture = new Texture2D(rgbaMat.cols(), rgbaMat.rows(), TextureFormat.RGBA32, false);
-
-            if (objectDetector == null)
+            if (string.IsNullOrEmpty(testInputImage))
             {
-                Imgproc.putText(rgbaMat, "model file is not loaded.", new Point(5, rgbaMat.rows() - 30), Imgproc.FONT_HERSHEY_SIMPLEX, 0.7, new Scalar(255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
-                Imgproc.putText(rgbaMat, "Please read console message.", new Point(5, rgbaMat.rows() - 10), Imgproc.FONT_HERSHEY_SIMPLEX, 0.7, new Scalar(255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
+                Mat rgbaMat = new Mat(simpleCameraDisplay.captureHeight, simpleCameraDisplay.captureWidth, CvType.CV_8UC3, new Scalar(0, 0, 0));
+
+                // Get texture from quad and save it to rgbaMat
+                Utils.texture2DToMat((Texture2D)_screenRendererRGB.material.mainTexture, rgbaMat);
+                
+                bgrMat = new Mat(rgbaMat.rows(), rgbaMat.cols(), CvType.CV_8UC3);
+
+                if (objectDetector == null)
+                {
+                    Imgproc.putText(rgbaMat, "model file is not loaded.", new Point(5, rgbaMat.rows() - 30), Imgproc.FONT_HERSHEY_SIMPLEX, 0.7, new Scalar(255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
+                    Imgproc.putText(rgbaMat, "Please read console message.", new Point(5, rgbaMat.rows() - 10), Imgproc.FONT_HERSHEY_SIMPLEX, 0.7, new Scalar(255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
+                }
+                else
+                {
+                    // Convert it from rgb to bgr format
+                    Imgproc.cvtColor(rgbaMat, bgrMat, Imgproc.COLOR_RGBA2BGR);
+
+                    // TickMeter tm = new TickMeter();
+                    // tm.start();
+
+                    //Run detector and save results in "results" variable
+                    Mat results = objectDetector.infer(bgrMat);
+
+                    // tm.stop();
+                    // Debug.Log("YOLOv8ObjectDetector Inference time (preprocess + infer + postprocess), ms: " + tm.getTimeMilli());
+
+                    // Imgproc.cvtColor(bgrMat, rgbaMat, Imgproc.COLOR_BGR2RGBA);
+
+                    // Add the detection rectangles to the bgrMat
+                    objectDetector.visualize(bgrMat, results, true, true);
+
+                }
+
+                float imageWidth = bgrMat.width();
+                float imageHeight = bgrMat.height();
+                float widthScale = (float)Screen.width / imageWidth;
+                float heightScale = (float)Screen.height / imageHeight;
+                if (widthScale < heightScale)
+                {
+                    Camera.main.orthographicSize = (imageWidth * (float)Screen.height / (float)Screen.width) / 2;
+                }
+                else
+                {
+                    Camera.main.orthographicSize = imageHeight / 2;
+                }
+
+                // Convert it back from bgr to rgb format
+                Imgproc.cvtColor(bgrMat, rgbaMat, Imgproc.COLOR_BGR2RGB);
+                texture = new Texture2D(rgbaMat.cols(), rgbaMat.rows(), TextureFormat.RGBA32, false);
+                
+                // Convert from mat to texture
+                Utils.matToTexture2D(bgrMat, texture);
+
+                // Set the raw image texture value as the converted texture.
+                screen2.GetComponent<RawImage>().texture = texture;
+
             }
-            else
-            {
 
-                Imgproc.cvtColor(rgbaMat, bgrMat, Imgproc.COLOR_RGBA2BGR);
-
-                // TickMeter tm = new TickMeter();
-                // tm.start();
-
-                Mat results = objectDetector.infer(bgrMat);
-
-                // tm.stop();
-                // Debug.Log("YOLOv8ObjectDetector Inference time (preprocess + infer + postprocess), ms: " + tm.getTimeMilli());
-
-                Imgproc.cvtColor(bgrMat, rgbaMat, Imgproc.COLOR_BGR2RGBA);
-
-                objectDetector.visualize(rgbaMat, results, true, true);
-
-            }
-
-            Utils.matToTexture2D(rgbaMat, texture);
         }
 
         /// <summary>
