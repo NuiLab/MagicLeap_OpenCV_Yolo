@@ -25,7 +25,6 @@ namespace YOLOv8WithOpenCVForUnityExample
     // [RequireComponent(typeof(WebCamTextureToMatHelper))]
     public class YOLOv8ObjectDetectionExample : MonoBehaviour
     {
-        [SerializeField] GameObject screen1;
         [SerializeField] GameObject screen2;
 
         [SerializeField, Tooltip("The renderer to show the camera capture on RGB format")]

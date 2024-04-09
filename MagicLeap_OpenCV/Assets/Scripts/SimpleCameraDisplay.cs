@@ -8,7 +8,6 @@ using UnityEngine.XR.MagicLeap;
 
 public class SimpleCameraDisplay : MonoBehaviour
 {
-    [SerializeField] GameObject screen1;
 
     MLCamera.PlaneInfo imagePlaneGlobal;
 
