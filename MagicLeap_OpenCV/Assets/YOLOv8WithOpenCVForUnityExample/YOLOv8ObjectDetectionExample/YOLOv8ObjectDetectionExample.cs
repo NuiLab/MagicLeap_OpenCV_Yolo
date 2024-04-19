@@ -340,7 +340,8 @@ namespace YOLOv8WithOpenCVForUnityExample
                 Mat rgbaMat = new Mat(simpleCameraDisplay.captureHeight, simpleCameraDisplay.captureWidth, CvType.CV_8UC3, new Scalar(0, 0, 0));
 
                 // Get texture from quad and save it to rgbaMat
-                Utils.texture2DToMat((Texture2D)_screenRendererRGB.material.mainTexture, rgbaMat);
+                Utils.texture2DToMat((Texture2D)gameObject.GetComponent<SimpleCameraDisplay>().GetTexture(), rgbaMat);
+                // Utils.texture2DToMat((Texture2D)_screenRendererRGB.material.mainTexture, rgbaMat);
                 
                 bgrMat = new Mat(rgbaMat.rows(), rgbaMat.cols(), CvType.CV_8UC3);
 

@@ -230,6 +230,11 @@ public class SimpleCameraDisplay : MonoBehaviour
         return frameMaterial;
     }
 
+    public Texture GetTexture()
+    {
+        return gameObject.GetComponent<Renderer>().material.mainTexture;
+    }
+
     public void setImage(ref Texture2D videoTextureRGB)
     {
         int actualWidth = (int)(imagePlaneGlobal.Width * imagePlaneGlobal.PixelStride);
